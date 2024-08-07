@@ -24,8 +24,6 @@ import os
 from dotenv import load_dotenv
 load_dotenv()
 
-import yfinance as yf
-
 from flask import make_response
 from time import time
 from firebase_admin import initialize_app, db, credentials, auth
@@ -87,13 +85,6 @@ def agg_vals_login(data):
     pwd = data.get('password')
     return email, pwd
 
-# Get ticker information from api
-def graphStock(tickersymbol):
-    tickerSymbol = tickersymbol
-    tickerData = yf.Ticker(tickerSymbol)
-    tickerDF = tickerData.history(period = '1d', start='2015-5-23', end='2023-6-23')
-    tickerDF = tickerDF[['Close']]
-    return tickerDF
 
 '''
 This class goes kinda crazy. It's the basis for every interaction on the login/register

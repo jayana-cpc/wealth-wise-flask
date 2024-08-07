@@ -6,7 +6,7 @@ from firebase_admin import credentials, auth, db
 import jwt
 from dotenv import load_dotenv
 
-from utils import User, init_curs, agg_vals, agg_vals_login, graphStock, BardAI
+from utils import User, init_curs, agg_vals, agg_vals_login, BardAI
 load_dotenv()
 
 app = Flask(__name__)
@@ -46,13 +46,6 @@ def secure_data():
         return jsonify({'message': 'Secure data', 'uid': uid}), 200
     except Exception as e:
         return jsonify({'message': 'Invalid token', 'error': str(e)}), 401
-
-@app.route("/api/get-ticker-data", methods=['OPTIONS', 'GET'])
-def get_data():
-    tick_value = request.args.get('ticker')
-    new_val = graphStock(tick_value)
-    data = new_val.to_dict(orient='records')
-    return jsonify(data)
 
 @app.route("/api/get-login", methods=['OPTIONS', 'GET'])
 def get_login():

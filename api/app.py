@@ -12,6 +12,7 @@ load_dotenv()
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
 
+# Configuration
 SECRET_KEY = os.getenv('SECRET_KEY', os.urandom(24))
 
 @app.before_request

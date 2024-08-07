@@ -1,18 +1,18 @@
-from flask import Flask, request, jsonify, make_response
-from flask_cors import CORS
 import os
 import json
+from flask import Flask, request, jsonify, make_response
+from flask_cors import CORS
 from firebase_admin import credentials, auth, db
 import jwt
 from dotenv import load_dotenv
 
-from utils import User, init_curs, agg_vals, agg_vals_login, BardAI
+from utils import User, init_curs, agg_vals, agg_vals_login, graphStock, BardAI
 load_dotenv()
-
 
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
 
+# Configuration
 SECRET_KEY = os.getenv('SECRET_KEY', os.urandom(24))
 
 @app.before_request
@@ -22,16 +22,16 @@ def before_request():
 
 @app.after_request
 def add_headers(response):
-    response.headers['Cross-Origin-Opener-Policy'] = 'same-origin-allow-popups' 
+    response.headers['Cross-Origin-Opener-Policy'] = 'same-origin-allow-popups'  # Change as needed
     return response
 
-@app.route('/')
-def home():
-    return 'Hello, World!'
+# @app.after_request
+# def add_headers(response):
+#     # Set the desired value for Cross-Origin-Opener-Policy
+#     response.headers['Cross-Origin-Opener-Policy'] = 'same-origin-allow-popups'  # Change this value as needed
+#     return response
 
-@app.route('/about')
-def about():
-    return 'About'
+
 
 @app.route('/api/secure-data', methods=['GET'])
 def secure_data():
@@ -47,6 +47,12 @@ def secure_data():
     except Exception as e:
         return jsonify({'message': 'Invalid token', 'error': str(e)}), 401
 
+@app.route("/api/get-ticker-data", methods=['OPTIONS', 'GET'])
+def get_data():
+    tick_value = request.args.get('ticker')
+    new_val = graphStock(tick_value)
+    data = new_val.to_dict(orient='records')
+    return jsonify(data)
 
 @app.route("/api/get-login", methods=['OPTIONS', 'GET'])
 def get_login():
@@ -79,6 +85,15 @@ def login():
         return jsonify({'message': 'Incorrect password' if err == 401 else 'User does not exist'}), 401
     return response
 
+# @app.route('/api/register-google', methods=["POST"])
+# def register_google():
+#     data = request.json
+#     user = User(id=data.get('idToken'))
+#     res, stat = user.reg_user()
+#     if not res:
+#         return jsonify({'message': 'User already exists' if stat == 401 else 'Internal error'}), 400
+#     return jsonify({'message': 'Registration successful'})
+
 @app.route("/api/login-google", methods=["POST"])
 def login_google():
     print("HERE!")
@@ -100,7 +115,13 @@ def post_user_info():
     ticker = data['ticker']
     user.post_portfolio_info({ticker['symbol']: {'name': ticker['name'], 'currency': ticker['currency'], 'stockExchange': ticker['stockExchange'], 'shortName': ticker['exchangeShortName']}})
     return "200"
-
+    # email, _, _, _ = agg_vals(data)
+    # user = User(email=email)
+    # portfolio_data = data.get("parsedData") or data.get("updatedStocks")
+    # if not portfolio_data:
+    #     is_deleted = True
+    # user.post_portfolio_info(portfolio_data, is_delete=is_deleted)
+    # return jsonify({'message': 'Portfolio info updated'})
 
 @app.route("/api/get-portfolio-info", methods=["POST"])
 def get_portfolio_info():
@@ -149,6 +170,4 @@ class SetEncoder(json.JSONEncoder):
         return json.JSONEncoder.default(self, obj)
 
 if __name__ == '__main__':
-    app.run()
-
-
+    app.run(debug=True, port=5000)

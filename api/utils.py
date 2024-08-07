@@ -24,6 +24,7 @@ import os
 from dotenv import load_dotenv
 load_dotenv()
 
+import yfinance as yf
 
 from flask import make_response
 from time import time
@@ -61,7 +62,7 @@ firebase_admin.initialize_app(cred, {
 def init_curs():
     response = make_response()
     # Allow specific origin(s)
-    response.headers.add('Access-Control-Allow-Origin', 'https://wealth-wise-three.vercel.app')  # Adjust the origin as needed
+    response.headers.add('Access-Control-Allow-Origin', 'http://localhost:3000')  # Adjust the origin as needed
 
     # Allow specific headers
     response.headers.add('Access-Control-Allow-Headers', 'Content-Type')
@@ -86,7 +87,13 @@ def agg_vals_login(data):
     pwd = data.get('password')
     return email, pwd
 
-
+# Get ticker information from api
+def graphStock(tickersymbol):
+    tickerSymbol = tickersymbol
+    tickerData = yf.Ticker(tickerSymbol)
+    tickerDF = tickerData.history(period = '1d', start='2015-5-23', end='2023-6-23')
+    tickerDF = tickerDF[['Close']]
+    return tickerDF
 
 '''
 This class goes kinda crazy. It's the basis for every interaction on the login/register

@@ -14,7 +14,6 @@ Introduce the firebase module to work with Google Authentication (trust)
 '''
 
 
-import bcrypt
 import json
 
 import firebase_admin

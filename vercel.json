@@ -11,10 +11,5 @@
       "src": "/(.*)",
       "dest": "api/app.py"
     }
-  ],
-  "functions": {
-    "api/**": {
-      "excludeFiles": "{*.cache,env}/**"
-    }
-  }
+  ]
 }

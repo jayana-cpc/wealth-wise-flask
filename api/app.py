@@ -1,12 +1,18 @@
 import os
 import json
+import sys
 from flask import Flask, request, jsonify, make_response
 from flask_cors import CORS
 from firebase_admin import credentials, auth, db
 import jwt
 from dotenv import load_dotenv
 
+# Debugging to check paths
+print("Current working directory:", os.getcwd())
+print("Python path:", sys.path)
+
 from utils import User, init_curs, agg_vals, agg_vals_login, BardAI
+
 load_dotenv()
 
 app = Flask(__name__)

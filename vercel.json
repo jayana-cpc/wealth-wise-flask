@@ -4,7 +4,7 @@
     ],
     "functions": {
         "api/**": {
-        "excludeFiles": "{*.cache,env}/**"
+            "excludeFiles": "{*.cache,env}/**"
         }
   }
   }

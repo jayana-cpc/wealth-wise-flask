@@ -16,8 +16,6 @@ Introduce the firebase module to work with Google Authentication (trust)
 
 import bcrypt
 import json
-import requests
-import logging
 
 import firebase_admin
 import os 
@@ -26,7 +24,7 @@ load_dotenv()
 
 from flask import make_response
 from time import time
-from firebase_admin import initialize_app, db, credentials, auth
+from firebase_admin import db, credentials, auth
 
 # from bardapi import Bard
 

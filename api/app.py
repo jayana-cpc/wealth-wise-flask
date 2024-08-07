@@ -12,7 +12,6 @@ load_dotenv()
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
 
-# Configuration
 SECRET_KEY = os.getenv('SECRET_KEY', os.urandom(24))
 
 @app.before_request
@@ -22,16 +21,8 @@ def before_request():
 
 @app.after_request
 def add_headers(response):
-    response.headers['Cross-Origin-Opener-Policy'] = 'same-origin-allow-popups'  # Change as needed
+    response.headers['Cross-Origin-Opener-Policy'] = 'same-origin-allow-popups'
     return response
-
-# @app.after_request
-# def add_headers(response):
-#     # Set the desired value for Cross-Origin-Opener-Policy
-#     response.headers['Cross-Origin-Opener-Policy'] = 'same-origin-allow-popups'  # Change this value as needed
-#     return response
-
-
 
 @app.route('/api/secure-data', methods=['GET'])
 def secure_data():
@@ -57,7 +48,7 @@ def get_login():
 def create_user():
     data = request.json
     email, pwd, fname, lname = agg_vals(data)
-    user = User(email, pwd, fname, lname)
+    user = User({'email': email, 'password': pwd, 'photoURL': '', 'displayName': '', 'uid': ''})
     user.reg_user()
     return jsonify({'message': 'Successfully updated DB'})
 
@@ -65,34 +56,21 @@ def create_user():
 def login():
     data = request.json
     email, pwd = agg_vals_login(data)
-    user = User(email, pwd)
-    stat, err = user.login_user(True)
+    user = User({'email': email, 'password': pwd, 'photoURL': '', 'displayName': '', 'uid': ''})
+    stat, err = user.login_user(False)
     user_data = {"email": user.email}
-
-    jwt_token = jwt.encode(user_data, SECRET_KEY, algorithm='HS256')
-
-    response = make_response(jsonify({'message': 'Logged in successfully'}))
-    response.set_cookie("jwt_token", jwt_token, httponly=True)
 
     if not stat:
         return jsonify({'message': 'Incorrect password' if err == 401 else 'User does not exist'}), 401
-    return response
 
-# @app.route('/api/register-google', methods=["POST"])
-# def register_google():
-#     data = request.json
-#     user = User(id=data.get('idToken'))
-#     res, stat = user.reg_user()
-#     if not res:
-#         return jsonify({'message': 'User already exists' if stat == 401 else 'Internal error'}), 400
-#     return jsonify({'message': 'Registration successful'})
+    jwt_token = jwt.encode(user_data, SECRET_KEY, algorithm='HS256')
+    response = make_response(jsonify({'message': 'Logged in successfully'}))
+    response.set_cookie("jwt_token", jwt_token, httponly=True)
+    return response
 
 @app.route("/api/login-google", methods=["POST"])
 def login_google():
-    print("HERE!")
-    print(request.json)
     user = User(request.json)
-    print(user)
     res, stat = user.reg_user()
     if not res:
         return jsonify({'message': 'Internal error' if stat == 401 else 'User does not exist'}), 400
@@ -103,35 +81,23 @@ def login_google():
 @app.route("/api/post-portfolio-info", methods=["POST"])
 def post_user_info():
     data = request.json
-    print(data)
     user = User(data['user'])
     ticker = data['ticker']
     user.post_portfolio_info({ticker['symbol']: {'name': ticker['name'], 'currency': ticker['currency'], 'stockExchange': ticker['stockExchange'], 'shortName': ticker['exchangeShortName']}})
     return "200"
-    # email, _, _, _ = agg_vals(data)
-    # user = User(email=email)
-    # portfolio_data = data.get("parsedData") or data.get("updatedStocks")
-    # if not portfolio_data:
-    #     is_deleted = True
-    # user.post_portfolio_info(portfolio_data, is_delete=is_deleted)
-    # return jsonify({'message': 'Portfolio info updated'})
 
 @app.route("/api/get-portfolio-info", methods=["POST"])
 def get_portfolio_info():
     data = request.json
-    print(data)
     user = User(data['user'])
     portfolio_info = user.get_portfolio_info()
     return jsonify(portfolio_info)
-
 
 @app.route("/api/delete-portfolio-info", methods=["POST"])
 def delete_portfolio_info():
     data = request.json
     user = User(data['user'])
-    print("data:", data)
     ticker = data['stock']
-
     user.delete_portfolio_info(ticker['symbol'])
     return "200"
 
@@ -143,7 +109,7 @@ def get_answer():
 
     if not user_prompt:
         return jsonify({'message': 'Invalid input'}), 400
-    
+
     gemini = BardAI()
     answer = gemini.get_response(
         f"{user_prompt}\n\nThis is my portfolio: {user_portfolio}\n\n"
@@ -154,7 +120,6 @@ def get_answer():
     )
 
     return jsonify({'answer': json.dumps(answer, cls=SetEncoder)})
-
 
 class SetEncoder(json.JSONEncoder):
     def default(self, obj):

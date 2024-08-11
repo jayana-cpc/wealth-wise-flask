@@ -140,7 +140,7 @@ last_updated = None
 # Group stock symbols by sector
 sectors = {
     "Energy": ["XOM", "CVX", "NEE", "FSLR", "DUK", "SO"],
-    "Communication": ["GOOGL", "META", "NFLX", "DIS", "VZ", "T"],
+    "Communication Services": ["GOOGL", "META", "NFLX", "DIS", "VZ", "T"],
     "Consumer Discretionary": ["TSLA", "AMZN", "HD", "NKE", "MCD", "SBUX"],
     "Consumer Staples": ["PG", "KO", "PEP", "WMT", "COST", "MDLZ"],
     "Financials": ["JPM", "BAC", "WFC", "C", "GS", "MS"],
@@ -152,7 +152,6 @@ sectors = {
     "Utilities": ["NEE", "DUK", "SO", "D", "AEP", "EXC"]
 }
 
-# Function to fetch stock data
 def fetch_stock_data(sector):
     stock_symbols = sectors[sector]
     api_key = os.getenv('NEXT_PUBLIC_FIN_MOD_API_KEY')
@@ -169,23 +168,22 @@ def fetch_stock_data(sector):
     
     return stock_data
 
-# Route to get stock data for a specific sector
 @app.route('/api/sector-data/<sector>', methods=['GET'])
 def get_sector_data(sector):
     global cached_data, last_updated
 
-    # Check if sector is valid
-    if sector not in sectors:
+    normalized_sector = sector.replace('%20', ' ').replace('-', ' ').replace('_', ' ')
+
+    if normalized_sector not in sectors:
         return jsonify({"error": "Invalid sector name"}), 400
 
-    # Check if data was fetched within the last day
     if last_updated is None or (datetime.now() - last_updated) > timedelta(days=1):
-        print(f"Fetching new data for sector: {sector}")
-        cached_data[sector] = fetch_stock_data(sector)
+        print(f"Fetching new data for sector: {normalized_sector}")
+        cached_data[normalized_sector] = fetch_stock_data(normalized_sector)
         last_updated = datetime.now()
     
     return jsonify({
-        "data": cached_data.get(sector, {}),
+        "data": cached_data.get(normalized_sector, {}),
         "last_updated": last_updated.isoformat()
     })
 

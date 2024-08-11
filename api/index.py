@@ -9,6 +9,9 @@ from dotenv import load_dotenv
 import firebase_admin
 from time import time
 from gemini import Gemini
+import time
+import requests
+from datetime import datetime, timedelta
 
 # Debugging to check paths
 print("Current working directory:", os.getcwd())
@@ -130,6 +133,61 @@ def delete_portfolio_info():
     ticker = data['stock']
     user.delete_portfolio_info(ticker['symbol'])
     return "200"
+
+cached_data = {}
+last_updated = None
+
+# Group stock symbols by sector
+sectors = {
+    "Energy": ["XOM", "CVX", "NEE", "FSLR", "DUK", "SO"],
+    "Communication": ["GOOGL", "META", "NFLX", "DIS", "VZ", "T"],
+    "Consumer Discretionary": ["TSLA", "AMZN", "HD", "NKE", "MCD", "SBUX"],
+    "Consumer Staples": ["PG", "KO", "PEP", "WMT", "COST", "MDLZ"],
+    "Financials": ["JPM", "BAC", "WFC", "C", "GS", "MS"],
+    "Healthcare": ["JNJ", "PFE", "UNH", "MRK", "ABBV", "TMO"],
+    "Industrials": ["BA", "CAT", "GE", "UNP", "MMM", "UPS"],
+    "Materials": ["LIN", "APD", "ECL", "SHW", "NEM", "FCX"],
+    "Real Estate": ["AMT", "PLD", "CCI", "SPG", "EQIX", "DLR"],
+    "Technology": ["AAPL", "MSFT", "GOOGL", "AMZN", "META", "INTC"],
+    "Utilities": ["NEE", "DUK", "SO", "D", "AEP", "EXC"]
+}
+
+# Function to fetch stock data
+def fetch_stock_data(sector):
+    stock_symbols = sectors[sector]
+    api_key = os.getenv('NEXT_PUBLIC_FIN_MOD_API_KEY')
+    stock_data = {}
+    
+    for symbol in stock_symbols:
+        try:
+            response = requests.get(
+                f"https://financialmodelingprep.com/api/v3/profile/{symbol}?apikey={api_key}"
+            )
+            stock_data[symbol] = response.json()[0]
+        except Exception as e:
+            print(f"Failed to fetch data for {symbol}: {e}")
+    
+    return stock_data
+
+# Route to get stock data for a specific sector
+@app.route('/api/sector-data/<sector>', methods=['GET'])
+def get_sector_data(sector):
+    global cached_data, last_updated
+
+    # Check if sector is valid
+    if sector not in sectors:
+        return jsonify({"error": "Invalid sector name"}), 400
+
+    # Check if data was fetched within the last day
+    if last_updated is None or (datetime.now() - last_updated) > timedelta(days=1):
+        print(f"Fetching new data for sector: {sector}")
+        cached_data[sector] = fetch_stock_data(sector)
+        last_updated = datetime.now()
+    
+    return jsonify({
+        "data": cached_data.get(sector, {}),
+        "last_updated": last_updated.isoformat()
+    })
 
 @app.route('/api/get-answer', methods=['POST'])
 def get_answer():

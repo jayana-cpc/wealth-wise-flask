@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 import firebase_admin
 from time import time
 from gemini import Gemini
-import time
+import time  
 import requests
 from datetime import datetime, timedelta
 from urllib.parse import unquote
@@ -106,13 +106,18 @@ def login():
 
 @app.route("/api/login-google", methods=["POST"])
 def login_google():
-    user = User(request.json)
-    res, stat = user.reg_user()
-    if not res:
-        return jsonify({'message': 'Internal error' if stat == 401 else 'User does not exist'}), 400
-    if stat == 201:
-        return jsonify({'message': "New user, prompt for extra info"})
-    return jsonify({'message': 'Login successful'})
+    try:
+        user = User(request.json)
+        res, stat = user.reg_user()
+        if not res:
+            return jsonify({'message': 'Internal error' if stat == 401 else 'User does not exist'}), 400
+        if stat == 201:
+            return jsonify({'message': "New user, prompt for extra info"})
+        return jsonify({'message': 'Login successful'})
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        return jsonify({'message': 'Server Error', 'error': str(e)}), 500
+
 
 @app.route("/api/post-portfolio-info", methods=["POST"])
 def post_user_info():
@@ -288,7 +293,7 @@ class User(object):
         self.username = data['displayName']
         self.email = data['email']
         self._uid = data['uid']
-        self.regdate = time()
+        self.regdate = time.time()
         self._portfolio = {}
 
     def post_portfolio_info(self, portfolio):

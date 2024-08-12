@@ -12,6 +12,7 @@ from gemini import Gemini
 import time
 import requests
 from datetime import datetime, timedelta
+from urllib.parse import unquote
 
 # Debugging to check paths
 print("Current working directory:", os.getcwd())
@@ -159,7 +160,6 @@ def fetch_stock_profile(symbol):
     
     if response.status_code == 200:
         profile_data = response.json()
-        print(f"Profile data for {symbol}: {profile_data}")  # Log the full response data
         return profile_data[0] if profile_data else None
     else:
         print(f"Failed to fetch profile for {symbol}: {response.status_code}, {response.text}")
@@ -175,7 +175,6 @@ def fetch_stock_price_data(symbol):
     
     if response.status_code == 200:
         price_data = response.json()
-        print(f"Price data for {symbol}: {price_data}")  # Log the full response data
         return price_data if price_data else None
     else:
         print(f"Failed to fetch price data for {symbol}: {response.status_code}, {response.text}")
@@ -205,13 +204,12 @@ def fetch_sector_data(sector):
 
     return sector_data
 
-# Route to get stock data for a specific sector
 @app.route('/api/sector-data/<sector>', methods=['GET'])
 def get_sector_data(sector):
     global cached_data, last_updated
 
-    # Normalize the sector name by replacing URL-encoded spaces
-    normalized_sector = sector.replace('%20', ' ')
+    # Normalize the sector name by unquoting any URL encoding (like %20)
+    normalized_sector = unquote(sector)
 
     # Check if sector is valid
     if normalized_sector not in sectors:

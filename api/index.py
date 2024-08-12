@@ -229,7 +229,7 @@ def get_sector_data(sector):
 
     with data_lock:
         # Check if data was fetched within the last 60 seconds for testing
-        if last_updated is None or (datetime.now() - last_updated) > timedelta(seconds=1):
+        if last_updated is None or (datetime.now() - last_updated) > timedelta(days=1):
             print(f"Fetching new data for sector: {normalized_sector}")
             cached_data[normalized_sector] = fetch_sector_data(normalized_sector)
             last_updated = datetime.now()

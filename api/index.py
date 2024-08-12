@@ -156,7 +156,12 @@ sectors = {
 def fetch_stock_profile(symbol):
     api_key = os.getenv('NEXT_PUBLIC_FIN_MOD_API_KEY')
     response = requests.get(f"https://financialmodelingprep.com/api/v3/profile/{symbol}?apikey={api_key}")
-    return response.json()[0] if response.status_code == 200 else None
+    
+    if response.status_code == 200:
+        profile_data = response.json()
+        if profile_data:
+            return profile_data[0]
+    return None
 
 # Function to fetch stock price data
 def fetch_stock_price_data(symbol):
@@ -166,7 +171,12 @@ def fetch_stock_price_data(symbol):
 
     api_url = f"https://api.polygon.io/v2/aggs/ticker/{symbol}/range/1/day/{one_month_ago}/{yesterday}?adjusted=true&sort=asc&limit=120&apiKey={polygon_api_key}"
     response = requests.get(api_url)
-    return response.json() if response.status_code == 200 else None
+    
+    if response.status_code == 200:
+        price_data = response.json()
+        if price_data:
+            return price_data
+    return None
 
 # Function to fetch all data for a sector
 def fetch_sector_data(sector):
@@ -205,14 +215,15 @@ def get_sector_data(sector):
 
     # Check if data was fetched within the last day
     if last_updated is None or (datetime.now() - last_updated) > timedelta(days=1):
-        print(f"Fetching new data for sector: {normalized_sector}")
         cached_data[normalized_sector] = fetch_sector_data(normalized_sector)
         last_updated = datetime.now()
 
     return jsonify({
-        "data": cached_data.get(normalized_sector, {}),
+        "data": cached_data.get(normalized_sector, []),
         "last_updated": last_updated.isoformat()
     })
+
+
 
 @app.route('/api/get-answer', methods=['POST'])
 def get_answer():

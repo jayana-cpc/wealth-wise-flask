@@ -13,6 +13,8 @@ import time
 import requests
 from datetime import datetime, timedelta
 from urllib.parse import unquote
+from threading import Lock
+
 
 # Debugging to check paths
 print("Current working directory:", os.getcwd())
@@ -137,6 +139,7 @@ def delete_portfolio_info():
 
 cached_data = {}
 last_updated = None
+data_lock = Lock()
 
 # Group stock symbols by sector
 sectors = {
@@ -157,14 +160,15 @@ sectors = {
 def fetch_stock_profile(symbol):
     api_key = os.getenv('NEXT_PUBLIC_FIN_MOD_API_KEY')
     response = requests.get(f"https://financialmodelingprep.com/api/v3/profile/{symbol}?apikey={api_key}")
-    
     if response.status_code == 200:
         profile_data = response.json()
+        print(f"Profile data for {symbol}: {profile_data}")  # Log the full response data
         return profile_data[0] if profile_data else None
     else:
         print(f"Failed to fetch profile for {symbol}: {response.status_code}, {response.text}")
     return None
 
+# Function to fetch stock price data
 def fetch_stock_price_data(symbol):
     polygon_api_key = os.getenv('NEXT_PUBLIC_POLYGON_API_KEY')
     yesterday = (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d')
@@ -172,14 +176,13 @@ def fetch_stock_price_data(symbol):
 
     api_url = f"https://api.polygon.io/v2/aggs/ticker/{symbol}/range/1/day/{one_month_ago}/{yesterday}?adjusted=true&sort=asc&limit=120&apiKey={polygon_api_key}"
     response = requests.get(api_url)
-    
     if response.status_code == 200:
         price_data = response.json()
+        print(f"Price data for {symbol}: {price_data}")  # Log the full response data
         return price_data if price_data else None
     else:
         print(f"Failed to fetch price data for {symbol}: {response.status_code}, {response.text}")
     return None
-
 
 # Function to fetch all data for a sector
 def fetch_sector_data(sector):
@@ -201,9 +204,13 @@ def fetch_sector_data(sector):
                 "image": profile.get("image"),
                 "priceData": price_data
             })
+        else:
+            print(f"Data for {symbol} in sector {sector} could not be fetched.")
 
+    print(f"Fetched data for sector {sector}: {sector_data}")  # Log fetched data
     return sector_data
 
+# Route to get stock data for a specific sector
 @app.route('/api/sector-data/<sector>', methods=['GET'])
 def get_sector_data(sector):
     global cached_data, last_updated
@@ -215,16 +222,19 @@ def get_sector_data(sector):
     if normalized_sector not in sectors:
         return jsonify({"error": "Invalid sector name"}), 400
 
-    # Check if data was fetched within the last day
-    if last_updated is None or (datetime.now() - last_updated) > timedelta(seconds=10):
-        cached_data[normalized_sector] = fetch_sector_data(normalized_sector)
-        last_updated = datetime.now()
+    with data_lock:
+        # Check if data was fetched within the last 60 seconds for testing
+        if last_updated is None or (datetime.now() - last_updated) > timedelta(seconds=1):
+            print(f"Fetching new data for sector: {normalized_sector}")
+            cached_data[normalized_sector] = fetch_sector_data(normalized_sector)
+            last_updated = datetime.now()
 
-    return jsonify({
-        "data": cached_data.get(normalized_sector, []),
-        "last_updated": last_updated.isoformat()
-    })
-
+        print(f"Returning cached data for sector: {normalized_sector}")
+        print(f"Cached data: {cached_data[normalized_sector]}")  # Debugging: Log cached data
+        return jsonify({
+            "data": cached_data.get(normalized_sector, []),
+            "last_updated": last_updated.isoformat()
+        })
 
 
 @app.route('/api/get-answer', methods=['POST'])

@@ -159,11 +159,12 @@ def fetch_stock_profile(symbol):
     
     if response.status_code == 200:
         profile_data = response.json()
-        if profile_data:
-            return profile_data[0]
+        print(f"Profile data for {symbol}: {profile_data}")  # Log the full response data
+        return profile_data[0] if profile_data else None
+    else:
+        print(f"Failed to fetch profile for {symbol}: {response.status_code}, {response.text}")
     return None
 
-# Function to fetch stock price data
 def fetch_stock_price_data(symbol):
     polygon_api_key = os.getenv('NEXT_PUBLIC_POLYGON_API_KEY')
     yesterday = (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d')
@@ -174,9 +175,12 @@ def fetch_stock_price_data(symbol):
     
     if response.status_code == 200:
         price_data = response.json()
-        if price_data:
-            return price_data
+        print(f"Price data for {symbol}: {price_data}")  # Log the full response data
+        return price_data if price_data else None
+    else:
+        print(f"Failed to fetch price data for {symbol}: {response.status_code}, {response.text}")
     return None
+
 
 # Function to fetch all data for a sector
 def fetch_sector_data(sector):

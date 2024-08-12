@@ -216,7 +216,7 @@ def get_sector_data(sector):
         return jsonify({"error": "Invalid sector name"}), 400
 
     # Check if data was fetched within the last day
-    if last_updated is None or (datetime.now() - last_updated) > timedelta(days=1):
+    if last_updated is None or (datetime.now() - last_updated) > timedelta(seconds=10):
         cached_data[normalized_sector] = fetch_sector_data(normalized_sector)
         last_updated = datetime.now()
 

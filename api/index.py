@@ -152,36 +152,63 @@ sectors = {
     "Utilities": ["NEE", "DUK", "SO", "D", "AEP", "EXC"]
 }
 
-def fetch_stock_data(sector):
-    stock_symbols = sectors[sector]
+# Function to fetch stock profile data
+def fetch_stock_profile(symbol):
     api_key = os.getenv('NEXT_PUBLIC_FIN_MOD_API_KEY')
-    stock_data = {}
-    
-    for symbol in stock_symbols:
-        try:
-            response = requests.get(
-                f"https://financialmodelingprep.com/api/v3/profile/{symbol}?apikey={api_key}"
-            )
-            stock_data[symbol] = response.json()[0]
-        except Exception as e:
-            print(f"Failed to fetch data for {symbol}: {e}")
-    
-    return stock_data
+    response = requests.get(f"https://financialmodelingprep.com/api/v3/profile/{symbol}?apikey={api_key}")
+    return response.json()[0] if response.status_code == 200 else None
 
+# Function to fetch stock price data
+def fetch_stock_price_data(symbol):
+    polygon_api_key = os.getenv('NEXT_PUBLIC_POLYGON_API_KEY')
+    yesterday = (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d')
+    one_month_ago = (datetime.now() - timedelta(days=30)).strftime('%Y-%m-%d')
+
+    api_url = f"https://api.polygon.io/v2/aggs/ticker/{symbol}/range/1/day/{one_month_ago}/{yesterday}?adjusted=true&sort=asc&limit=120&apiKey={polygon_api_key}"
+    response = requests.get(api_url)
+    return response.json() if response.status_code == 200 else None
+
+# Function to fetch all data for a sector
+def fetch_sector_data(sector):
+    stock_symbols = sectors[sector]
+    sector_data = []
+
+    for symbol in stock_symbols:
+        profile = fetch_stock_profile(symbol)
+        price_data = fetch_stock_price_data(symbol)
+
+        if profile and price_data:
+            sector_data.append({
+                "symbol": symbol,
+                "companyName": profile.get("companyName"),
+                "price": profile.get("price"),
+                "industry": profile.get("industry"),
+                "description": profile.get("description"),
+                "website": profile.get("website"),
+                "image": profile.get("image"),
+                "priceData": price_data
+            })
+
+    return sector_data
+
+# Route to get stock data for a specific sector
 @app.route('/api/sector-data/<sector>', methods=['GET'])
 def get_sector_data(sector):
     global cached_data, last_updated
 
-    normalized_sector = sector.replace('%20', ' ').replace('-', ' ').replace('_', ' ')
+    # Normalize the sector name by replacing URL-encoded spaces
+    normalized_sector = sector.replace('%20', ' ')
 
+    # Check if sector is valid
     if normalized_sector not in sectors:
         return jsonify({"error": "Invalid sector name"}), 400
 
+    # Check if data was fetched within the last day
     if last_updated is None or (datetime.now() - last_updated) > timedelta(days=1):
         print(f"Fetching new data for sector: {normalized_sector}")
-        cached_data[normalized_sector] = fetch_stock_data(normalized_sector)
+        cached_data[normalized_sector] = fetch_sector_data(normalized_sector)
         last_updated = datetime.now()
-    
+
     return jsonify({
         "data": cached_data.get(normalized_sector, {}),
         "last_updated": last_updated.isoformat()

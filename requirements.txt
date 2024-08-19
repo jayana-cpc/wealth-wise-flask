@@ -6,3 +6,4 @@ PyJWT==2.8.0
 python_gemini_api==2.4.12
 Requests==2.32.3
 python-dotenv
+Flask-Mail==0.10.0

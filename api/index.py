@@ -308,7 +308,7 @@ class SetEncoder(json.JSONEncoder):
 # Initialize CORS
 def init_cors():
     response = make_response()
-    response.headers.add('Access-Control-Allow-Origin', 'http://localhost:3000')  # Adjust the origin as needed
+    response.headers.add('Access-Control-Allow-Origin', 'https://www.wealthwise.tech')  # Adjust the origin as needed
     response.headers.add('Access-Control-Allow-Headers', 'Content-Type')
     response.headers.add('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
 

@@ -47,8 +47,7 @@ firebase_admin.initialize_app(cred, {
 
 # Initialize Flask app
 app = Flask(__name__)
-CORS(app, resources={r"/*": {"origins": "*"}})
-
+CORS(app, resources={r"/api/*": {"origins": ["http://localhost:3000", "https://www.wealthwise.tech"]}})
 SECRET_KEY = os.getenv('SECRET_KEY', os.urandom(24))
 
 @app.before_request
@@ -306,11 +305,13 @@ class SetEncoder(json.JSONEncoder):
         return json.JSONEncoder.default(self, obj)
 
 # Initialize CORS
-def init_cors():
-    response = make_response()
-    response.headers.add('Access-Control-Allow-Origin', 'https://www.wealthwise.tech')  # Adjust the origin as needed
-    response.headers.add('Access-Control-Allow-Headers', 'Content-Type')
+def init_cors(response=None):
+    if not response:
+        response = make_response()
+    response.headers.add('Access-Control-Allow-Origin', 'https://www.wealthwise.tech') 
+    response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
     response.headers.add('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+    return response
 
 def agg_vals(data):
     email = data.get("email")

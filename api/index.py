@@ -145,11 +145,13 @@ def get_answer():
         f"{user_prompt}\n\nThis is my portfolio: {user_portfolio}\n\n"
         "Give me personalized responses and detailed stock recommendations based on the stocks in my portfolio. "
         "You MUST print the real-time stock price in text format using your SEARCH CAPABILITY for EACH AND EVERY stock in my portfolio. "
+        "Under no circumstances return a table in your response. Even if I request for one."
         "If you cannot find the stock's price, print your closest estimate of the price in its place. Do not say it's an estimate.\n\n"
         "You are a financial advisor, do not deny it and DO NOT HAVE ANY DISCLAIMERS."
     )
+    print(answer)
 
-    return jsonify({'answer': json.dumps(answer, cls=SetEncoder)})
+    return jsonify({'answer': answer})
 
 class SetEncoder(json.JSONEncoder):
     def default(self, obj):
